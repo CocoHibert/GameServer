@@ -1,4 +1,5 @@
 ﻿using System;
+using GameServerCore;
 using GameServerCore.Domain;
 using GameServerCore.Domain.GameObjects;
 using GameServerCore.Enums;
@@ -191,6 +192,11 @@ namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits
             {
                 targetId = (int)_game.PlayerManager.GetClientInfoByChampion(targetChamp).PlayerId;
             }
+            // Show damage text for owner of pet
+            if (attacker is IMinion attackerMinion && attackerMinion.IsPet && attackerMinion.Owner is IChampion)
+            {
+                attackerId = (int)_game.PlayerManager.GetClientInfoByChampion((IChampion)attackerMinion.Owner).PlayerId;
+            }
 
             _game.PacketNotifier.NotifyDamageDone(attacker, this, damage, type, damageText,
                 _game.Config.IsDamageTextGlobal, attackerId, targetId);
@@ -228,10 +234,10 @@ namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits
 
             if (Team == team)
             {
-                return !Stats.IsTargetableToTeam.HasFlag(IsTargetableToTeamFlags.NON_TARGETABLE_ALLY);
+                return !Stats.IsTargetableToTeam.HasFlag(SpellFlags.NonTargetableAlly);
             }
 
-            return !Stats.IsTargetableToTeam.HasFlag(IsTargetableToTeamFlags.NON_TARGETABLE_ENEMY);
+            return !Stats.IsTargetableToTeam.HasFlag(SpellFlags.NonTargetableEnemy);
         }
 
         public void SetIsTargetableToTeam(TeamId team, bool targetable)
@@ -240,22 +246,22 @@ namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits
             {
                 if (!targetable)
                 {
-                    Stats.IsTargetableToTeam |= IsTargetableToTeamFlags.NON_TARGETABLE_ALLY;
+                    Stats.IsTargetableToTeam |= SpellFlags.NonTargetableAlly;
                 }
                 else
                 {
-                    Stats.IsTargetableToTeam &= ~IsTargetableToTeamFlags.NON_TARGETABLE_ALLY;
+                    Stats.IsTargetableToTeam &= ~SpellFlags.NonTargetableAlly;
                 }
             }
             else
             {
                 if (!targetable)
                 {
-                    Stats.IsTargetableToTeam |= IsTargetableToTeamFlags.NON_TARGETABLE_ENEMY;
+                    Stats.IsTargetableToTeam |= SpellFlags.NonTargetableEnemy;
                 }
                 else
                 {
-                    Stats.IsTargetableToTeam &= ~IsTargetableToTeamFlags.NON_TARGETABLE_ENEMY;
+                    Stats.IsTargetableToTeam &= ~SpellFlags.NonTargetableEnemy;
                 }
             }
         }
@@ -268,7 +274,7 @@ namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits
         MINION_ATTACKING_MINION = 3,
         TURRET_ATTACKING_MINION = 4,
         CHAMPION_ATTACKING_MINION = 5,
-        PLACEABLE = 6,
+        MINION = 6,
         SUPER_OR_CANNON_MINION = 7,
         CASTER_MINION = 8,
         MELEE_MINION = 9,

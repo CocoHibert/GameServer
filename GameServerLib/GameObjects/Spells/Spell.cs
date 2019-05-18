@@ -1,4 +1,5 @@
-﻿using GameServerCore.Content;
+﻿using GameServerCore;
+using GameServerCore.Content;
 using GameServerCore.Domain;
 using GameServerCore.Domain.GameObjects;
 using GameServerCore.Enums;
@@ -217,19 +218,20 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
             _spellGameScript.ApplyEffects(Owner, u, this, p);
         }
 
-        public void AddProjectile(string nameMissile, float toX, float toY, bool isServerOnly = false)
+        public void AddProjectile(string nameMissile, float fromX, float fromY, float toX, float toY, bool isServerOnly = false)
         {
             var p = new Projectile(
                 _game,
-                Owner.X,
-                Owner.Y,
+                fromX,
+                fromY,
                 (int)SpellData.LineWidth,
                 Owner,
                 new Target(toX, toY),
                 this,
                 SpellData.MissileSpeed,
                 nameMissile,
-                SpellData.Flags
+                SpellData.Flags,
+                FutureProjNetId
             );
             _game.ObjectManager.AddObject(p);
             if (!isServerOnly)
@@ -250,7 +252,8 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
                 this,
                 SpellData.MissileSpeed,
                 nameMissile,
-                SpellData.Flags
+                SpellData.Flags,
+                FutureProjNetId
             );
             _game.ObjectManager.AddObject(p);
             if (!isServerOnly)
@@ -271,7 +274,8 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
                 this,
                 effectName,
                 SpellData.Flags,
-                affectAsCastIsOver
+                affectAsCastIsOver,
+                FutureProjNetId
             );
             _game.ObjectManager.AddObject(l);
         }
@@ -289,7 +293,8 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
                 effectName,
                 SpellData.Flags,
                 affectAsCastIsOver,
-                angleDeg
+                angleDeg,
+                FutureProjNetId
             );
             _game.ObjectManager.AddObject(c);
         }

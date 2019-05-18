@@ -52,6 +52,7 @@ namespace GameServerCore.Packets.Interfaces
         void NotifyItemsSwapped(IChampion c, byte fromSlot, byte toSlot);
         // TODO: move handling to PacketDefinitions
         void NotifyKeyCheck(ulong userId, uint playerNo);
+        void NotifyLaneMinionSpawned(ILaneMinion m, TeamId team);
         void NotifyLeaveVision(IGameObject o, TeamId team);
         void NotifyLevelPropSpawn(int userId, ILevelProp levelProp);
         void NotifyLevelUp(IChampion c);
@@ -60,7 +61,7 @@ namespace GameServerCore.Packets.Interfaces
         void NotifyLoadScreenPlayerName(int userId, Pair<uint, ClientInfo> player);
         void NotifyMinionSpawned(IMinion m, TeamId team);
         void NotifyModelUpdate(IAttackableUnit obj);
-        void NotifyModifyShield(IAttackableUnit unit, float amount, ShieldType type);
+        void NotifyModifyShield(IAttackableUnit unit, float amount, bool IsPhysical, bool IsMagical, bool StopShieldFade);
         void NotifyMovement(IGameObject o);
         void NotifyNextAutoAttack(IAttackableUnit attacker, IAttackableUnit target, uint futureProjNetId, bool isCritical, bool nextAttackFlag);
         void NotifyNpcDie(IAttackableUnit die, IAttackableUnit killer);
