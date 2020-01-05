@@ -4,6 +4,7 @@ using System.Numerics;
 using GameServerCore.Domain;
 using GameServerCore.Domain.GameObjects;
 using GameServerCore.Enums;
+using GameServerCore.Maps;
 using LeagueSandbox.GameServer.GameObjects;
 using LeagueSandbox.GameServer.GameObjects.AttackableUnits;
 using LeagueSandbox.GameServer.GameObjects.AttackableUnits.AI;
@@ -155,6 +156,7 @@ namespace LeagueSandbox.GameServer.Maps
         private long _nextSpawnTime = 90 * 1000;
         private readonly long _spawnInterval = 30 * 1000;
         private readonly Dictionary<TeamId, Fountain> _fountains;
+        private readonly Dictionary<TeamId, SurrenderHandler> _surrenders;
 
         public List<int> ExpToLevelUp { get; set; } = new List<int>
         {
@@ -193,6 +195,11 @@ namespace LeagueSandbox.GameServer.Maps
                 { TeamId.TEAM_BLUE, new Fountain(game, TeamId.TEAM_BLUE, 11, 250, 1000) },
                 { TeamId.TEAM_PURPLE, new Fountain(game, TeamId.TEAM_PURPLE, 13950, 14200, 1000) }
             };
+            _surrenders = new Dictionary<TeamId, SurrenderHandler>
+            {
+                { TeamId.TEAM_BLUE, new SurrenderHandler(game, TeamId.TEAM_BLUE, 1200000.0f , 300000.0f , 30.0f) },
+                { TeamId.TEAM_PURPLE, new SurrenderHandler(game, TeamId.TEAM_PURPLE, 1200000.0f, 300000.0f, 30.0f) }
+            };
             SpawnEnabled = _game.Config.MinionSpawnsEnabled;
         }
 
@@ -215,6 +222,7 @@ namespace LeagueSandbox.GameServer.Maps
             _game.Map.AnnouncerEvents.Add(new Announce(_game, _firstSpawnTime, Announces.MINIONS_HAVE_SPAWNED, false)); // Minions have spawned (90 * 1000)
             _game.Map.AnnouncerEvents.Add(new Announce(_game, _firstSpawnTime, Announces.MINIONS_HAVE_SPAWNED2, false)); // Minions have spawned [2] (90 * 1000)
 
+            // TODO: Generate & use exact positions from content files
             _game.ObjectManager.AddObject(new LaneTurret(_game, "Turret_T1_R_03_A", 10097.62f, 808.73f, TeamId.TEAM_BLUE,
                 TurretType.OUTER_TURRET, GetTurretItems(TurretType.OUTER_TURRET)));
             _game.ObjectManager.AddObject(new LaneTurret(_game, "Turret_T1_R_02_A", 6512.53f, 1262.62f, TeamId.TEAM_BLUE,
@@ -270,18 +278,17 @@ namespace LeagueSandbox.GameServer.Maps
             _game.ObjectManager.AddObject(new LevelProp(_game, -99.5613f, 855.6632f, 191.4039f, 158.0f, 0.0f, 0.0f, 0.0f, 0.0f, "LevelProp_ShopMale1", "ShopMale"));
 
             //TODO
-            var collisionRadius = 0;
+            var collisionRadius = 400;
             var sightRange = 1700;
 
-            _game.ObjectManager.AddObject(new Inhibitor(_game, "OrderInhibitor", TeamId.TEAM_BLUE, collisionRadius, 835, 3400, sightRange, 0xffd23c3e)); //top
-            _game.ObjectManager.AddObject(new Inhibitor(_game, "OrderInhibitor", TeamId.TEAM_BLUE, collisionRadius, 2785, 3000, sightRange, 0xff4a20f1)); //mid
-            _game.ObjectManager.AddObject(new Inhibitor(_game, "OrderInhibitor", TeamId.TEAM_BLUE, collisionRadius, 3044, 1070, sightRange, 0xff9303e1)); //bot
-            _game.ObjectManager.AddObject(new Inhibitor(_game, "ChaosInhibitor", TeamId.TEAM_PURPLE, collisionRadius, 10960, 13450, sightRange, 0xff6793d0)); //top
-            _game.ObjectManager.AddObject(new Inhibitor(_game, "ChaosInhibitor", TeamId.TEAM_PURPLE, collisionRadius, 11240, 11490, sightRange, 0xffff8f1f)); //mid
-            _game.ObjectManager.AddObject(new Inhibitor(_game, "ChaosInhibitor", TeamId.TEAM_PURPLE, collisionRadius, 13200, 11200, sightRange, 0xff26ac0f)); //bot
-
+            _game.ObjectManager.AddObject(new Inhibitor(_game, "OrderInhibitor", TeamId.TEAM_BLUE, collisionRadius, 853.368f, 3345.1645f, sightRange, 0xffd23c3e)); //top exact
+            _game.ObjectManager.AddObject(new Inhibitor(_game, "OrderInhibitor", TeamId.TEAM_BLUE, collisionRadius, 2785, 3000, sightRange, 0xff4a20f1)); //mid exact
+            _game.ObjectManager.AddObject(new Inhibitor(_game, "OrderInhibitor", TeamId.TEAM_BLUE, collisionRadius, 3044, 1070, sightRange, 0xff9303e1)); //bot exact
+            _game.ObjectManager.AddObject(new Inhibitor(_game, "ChaosInhibitor", TeamId.TEAM_PURPLE, collisionRadius, 10962.21f, 13422.915f, sightRange, 0xff6793d0)); //top exact          
+            _game.ObjectManager.AddObject(new Inhibitor(_game, "ChaosInhibitor", TeamId.TEAM_PURPLE, collisionRadius, 11225.62402f, 11425.87012f, sightRange, 0xffff8f1f)); //mid exact            
+            _game.ObjectManager.AddObject(new Inhibitor(_game, "ChaosInhibitor", TeamId.TEAM_PURPLE, collisionRadius, 13200, 11200, sightRange, 0xff26ac0f)); //bot exact
             _game.ObjectManager.AddObject(new Nexus(_game, "OrderNexus", TeamId.TEAM_BLUE, collisionRadius, 1170, 1470, sightRange, 0xfff97db5));
-            _game.ObjectManager.AddObject(new Nexus(_game, "ChaosNexus", TeamId.TEAM_PURPLE, collisionRadius, 12800, 13100, sightRange, 0xfff02c0f));
+            _game.ObjectManager.AddObject(new Nexus(_game, "ChaosNexus", TeamId.TEAM_PURPLE, collisionRadius, 12804.69f, 13041.465f, sightRange, 0xfff02c0f));
         }
 
         public void Update(float diff)
@@ -319,6 +326,9 @@ namespace LeagueSandbox.GameServer.Maps
             {
                 fountain.Update(diff);
             }
+
+            foreach(var surrender in _surrenders.Values)
+                surrender.Update(diff);
         }
 
         public ITarget GetRespawnLocation(TeamId team)
@@ -447,21 +457,21 @@ namespace LeagueSandbox.GameServer.Maps
             return dic[m.MinionSpawnType];
         }
 
-        public Tuple<TeamId, Vector2> GetMinionSpawnPosition(MinionSpawnPosition spawnPosition)
+        public Tuple<TeamId, Vector2> GetMinionSpawnPosition(string spawnPosition)
         {
             switch (spawnPosition)
             {
-                case MinionSpawnPosition.SPAWN_BLUE_TOP:
+                case Barracks.SPAWN_BLUE_TOP:
                     return new Tuple<TeamId, Vector2>(TeamId.TEAM_BLUE, new Vector2(907, 1715));
-                case MinionSpawnPosition.SPAWN_BLUE_BOT:
+                case Barracks.SPAWN_BLUE_BOT:
                     return new Tuple<TeamId, Vector2>(TeamId.TEAM_BLUE, new Vector2(1533, 1321));
-                case MinionSpawnPosition.SPAWN_BLUE_MID:
+                case Barracks.SPAWN_BLUE_MID:
                     return new Tuple<TeamId, Vector2>(TeamId.TEAM_BLUE, new Vector2(1443, 1663));
-                case MinionSpawnPosition.SPAWN_RED_TOP:
+                case Barracks.SPAWN_RED_TOP:
                     return new Tuple<TeamId, Vector2>(TeamId.TEAM_PURPLE, new Vector2(14455, 13159));
-                case MinionSpawnPosition.SPAWN_RED_BOT:
+                case Barracks.SPAWN_RED_BOT:
                     return new Tuple<TeamId, Vector2>(TeamId.TEAM_PURPLE, new Vector2(12967, 12695));
-                case MinionSpawnPosition.SPAWN_RED_MID:
+                case Barracks.SPAWN_RED_MID:
                     return new Tuple<TeamId, Vector2>(TeamId.TEAM_PURPLE, new Vector2(12433, 12623));
             }
             return new Tuple<TeamId, Vector2>(0, new Vector2());
@@ -480,7 +490,7 @@ namespace LeagueSandbox.GameServer.Maps
                     m.Stats.AttackDamage.BaseValue = 12.0f + 1.0f * (int)(_game.GameTime / (180 * 1000));
                     m.Stats.Range.BaseValue = 180.0f;
                     m.Stats.AttackSpeedFlat = 1.250f;
-                    m.AutoAttackDelay = 11.8f / 30.0f;
+                    m.AutoAttackCastTime = 11.8f / 30.0f;
                     m.IsMelee = true;
                     break;
                 case MinionSpawnType.MINION_TYPE_CASTER:
@@ -489,7 +499,7 @@ namespace LeagueSandbox.GameServer.Maps
                     m.Stats.AttackDamage.BaseValue = 23.0f + 1.0f * (int)(_game.GameTime / (90 * 1000));
                     m.Stats.Range.BaseValue = 600.0f;
                     m.Stats.AttackSpeedFlat = 0.670f;
-                    m.AutoAttackDelay = 14.1f / 30.0f;
+                    m.AutoAttackCastTime = 14.1f / 30.0f;
                     m.AutoAttackProjectileSpeed = 650.0f;
                     break;
                 case MinionSpawnType.MINION_TYPE_CANNON:
@@ -498,7 +508,7 @@ namespace LeagueSandbox.GameServer.Maps
                     m.Stats.AttackDamage.BaseValue = 40.0f + 3.0f * (int)(_game.GameTime / (180 * 1000));
                     m.Stats.Range.BaseValue = 450.0f;
                     m.Stats.AttackSpeedFlat = 1.0f;
-                    m.AutoAttackDelay = 9.0f / 30.0f;
+                    m.AutoAttackCastTime = 9.0f / 30.0f;
                     m.AutoAttackProjectileSpeed = 1200.0f;
                     break;
                 case MinionSpawnType.MINION_TYPE_SUPER:
@@ -510,32 +520,32 @@ namespace LeagueSandbox.GameServer.Maps
                     m.Stats.Armor.BaseValue = 30.0f;
                     m.Stats.MagicResist.BaseValue = -30.0f;
                     m.IsMelee = true;
-                    m.AutoAttackDelay = 15.0f / 30.0f;
+                    m.AutoAttackCastTime = 15.0f / 30.0f;
                     break;
             }
         }
 
-        public void SpawnMinion(List<MinionSpawnType> list, int minionNo, MinionSpawnPosition pos, List<Vector2> waypoints)
+        public void SpawnMinion(List<MinionSpawnType> list, int minionNo, string barracksName, List<Vector2> waypoints)
         {
             if (list.Count <= minionNo)
             {
                 return;
             }
 
-            var m = new LaneMinion(_game, list[minionNo], pos, waypoints);
+            var m = new LaneMinion(_game, list[minionNo], barracksName, waypoints);
             _game.ObjectManager.AddObject(m);
         }
 
         public bool Spawn()
         {
-            var positions = new List<MinionSpawnPosition>
+            var barracks = new List<string>
             {
-                MinionSpawnPosition.SPAWN_BLUE_TOP,
-                MinionSpawnPosition.SPAWN_BLUE_BOT,
-                MinionSpawnPosition.SPAWN_BLUE_MID,
-                MinionSpawnPosition.SPAWN_RED_TOP,
-                MinionSpawnPosition.SPAWN_RED_BOT,
-                MinionSpawnPosition.SPAWN_RED_MID
+                Barracks.SPAWN_BLUE_TOP,
+                Barracks.SPAWN_BLUE_BOT,
+                Barracks.SPAWN_BLUE_MID,
+                Barracks.SPAWN_RED_TOP,
+                Barracks.SPAWN_RED_BOT,
+                Barracks.SPAWN_RED_MID
             };
 
             var cannonMinionTimestamps = new List<Tuple<long, int>>
@@ -545,14 +555,14 @@ namespace LeagueSandbox.GameServer.Maps
                 new Tuple<long, int>(35 * 60 * 1000, 0)
             };
 
-            var spawnToWaypoints = new Dictionary<MinionSpawnPosition, Tuple<List<Vector2>, uint>>
+            var spawnToWaypoints = new Dictionary<string, Tuple<List<Vector2>, uint>>
             {
-                {MinionSpawnPosition.SPAWN_BLUE_BOT, Tuple.Create(BlueBotWaypoints, 0xff26ac0f)},
-                {MinionSpawnPosition.SPAWN_BLUE_MID, Tuple.Create(BlueMidWaypoints, 0xffff8f1f)},
-                {MinionSpawnPosition.SPAWN_BLUE_TOP, Tuple.Create(BlueTopWaypoints, 0xff6793d0)},
-                {MinionSpawnPosition.SPAWN_RED_BOT, Tuple.Create(RedBotWaypoints, 0xff9303e1)},
-                {MinionSpawnPosition.SPAWN_RED_MID, Tuple.Create(RedMidWaypoints, 0xff4a20f1)},
-                {MinionSpawnPosition.SPAWN_RED_TOP, Tuple.Create(RedTopWaypoints, 0xffd23c3e)}
+                {Barracks.SPAWN_BLUE_BOT, Tuple.Create(BlueBotWaypoints, 0xff26ac0f)},
+                {Barracks.SPAWN_BLUE_MID, Tuple.Create(BlueMidWaypoints, 0xffff8f1f)},
+                {Barracks.SPAWN_BLUE_TOP, Tuple.Create(BlueTopWaypoints, 0xff6793d0)},
+                {Barracks.SPAWN_RED_BOT, Tuple.Create(RedBotWaypoints, 0xff9303e1)},
+                {Barracks.SPAWN_RED_MID, Tuple.Create(RedMidWaypoints, 0xff4a20f1)},
+                {Barracks.SPAWN_RED_TOP, Tuple.Create(RedTopWaypoints, 0xffd23c3e)}
             };
             var cannonMinionCap = 2;
 
@@ -564,10 +574,10 @@ namespace LeagueSandbox.GameServer.Maps
                 }
             }
 
-            foreach (var pos in positions)
+            foreach (var barracksName in barracks)
             {
-                var waypoints = spawnToWaypoints[pos].Item1;
-                var inhibitorId = spawnToWaypoints[pos].Item2;
+                var waypoints = spawnToWaypoints[barracksName].Item1;
+                var inhibitorId = spawnToWaypoints[barracksName].Item2;
                 var inhibitor = _game.ObjectManager.GetInhibitorById(inhibitorId);
                 var isInhibitorDead = inhibitor.InhibitorState == InhibitorState.DEAD && !inhibitor.RespawnAnnounced;
 
@@ -595,7 +605,7 @@ namespace LeagueSandbox.GameServer.Maps
                     list = DoubleSuperMinionWave;
                 }
 
-                SpawnMinion(list, _minionNumber, pos, waypoints);
+                SpawnMinion(list, _minionNumber, barracksName, waypoints);
             }
 
 
@@ -623,6 +633,12 @@ namespace LeagueSandbox.GameServer.Maps
             }
 
             return EndGameCameraPosition[team];
+        }
+
+        public void HandleSurrender(int userId, IChampion who, bool vote)
+        {
+            if (_surrenders.ContainsKey(who.Team))
+                _surrenders[who.Team].HandleSurrender(userId, who, vote);
         }
     }
 }
