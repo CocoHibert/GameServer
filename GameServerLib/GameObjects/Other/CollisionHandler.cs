@@ -21,16 +21,17 @@ namespace LeagueSandbox.GameServer.GameObjects.Other
             // Initialise the pathfinder.
         }
 
+        //游戏对象管理
         public void AddObject(IGameObject obj)
         {
             _objects.Add(obj);
         }
-
         public void RemoveObject(IGameObject obj)
         {
             _objects.Remove(obj);
         }
 
+        //检测对象碰撞
         public void Update()
         {
             foreach (var obj in _objects)

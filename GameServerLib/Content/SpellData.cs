@@ -12,28 +12,34 @@ namespace LeagueSandbox.GameServer.Content
         SPELL_FLAG_AUTO_CAST = 0x00000002,
         SPELL_FLAG_INSTANT_CAST = 0x00000004,
         SPELL_FLAG_PERSIST_THROUGH_DEATH = 0x00000008,
+
         SPELL_FLAG_NON_DISPELLABLE = 0x00000010,
         SPELL_FLAG_NO_CLICK = 0x00000020,
         SPELL_FLAG_AFFECT_IMPORTANT_BOT_TARGETS = 0x00000040,
         SPELL_FLAG_ALLOW_WHILE_TAUNTED = 0x00000080,
+
         SPELL_FLAG_NOT_AFFECT_ZOMBIE = 0x00000100,
         SPELL_FLAG_AFFECT_UNTARGETABLE = 0x00000200,
         SPELL_FLAG_AFFECT_ENEMIES = 0x00000400,
         SPELL_FLAG_AFFECT_FRIENDS = 0x00000800,
+
         SPELL_FLAG_AFFECT_BUILDINGS = 0x00001000,
         SPELL_FLAG_NOT_AFFECT_SELF = 0x00002000,
         SPELL_FLAG_AFFECT_NEUTRAL = 0x00004000,
         SPELL_FLAG_AFFECT_ALL_SIDES = 0x00004C00,
         SPELL_FLAG_AFFECT_MINIONS = 0x00008000,
+
         SPELL_FLAG_AFFECT_HEROES = 0x00010000,
         SPELL_FLAG_AFFECT_TURRETS = 0x00020000,
         SPELL_FLAG_AFFECT_ALL_UNIT_TYPES = 0x00038000,
         SPELL_FLAG_ALWAYS_SELF = 0x00040000,
         SPELL_FLAG_AFFECT_DEAD = 0x00080000,
+
         SPELL_FLAG_AFFECT_NOT_PET = 0x00100000,
         SPELL_FLAG_AFFECT_BARRACKS_ONLY = 0x00200000,
         SPELL_FLAG_IGNORE_VISIBILITY_CHECK = 0x00400000,
         SPELL_FLAG_NON_TARGETABLE_ALLY = 0x00800000,
+
         SPELL_FLAG_NON_TARGETABLE_ENEMY = 0x01000000,
         SPELL_FLAG_NON_TARGETABLE_ALL = 0x01800000,
         SPELL_FLAG_TARGETABLE_TO_ALL = 0x02000000,
@@ -47,12 +53,12 @@ namespace LeagueSandbox.GameServer.Content
 
     public enum SpellTargetType
     {
-        TARGET_SELF = 0, // teemo W ; xin Q
-        TARGET_UNIT = 1, // Taric E ; Annie Q ; teemo Q ; xin E
-        TARGET_LOC_AOE = 2, // Lux E, Ziggs R
-        TARGET_CONE = 3, // Annie W, Kass E
-        TARGET_SELF_AOE = 4, // sivir R, Gangplanck E
-        TARGET_LOC = 6, // Ez Q, W, E, R ; Mundo Q
+        TARGET_SELF = 0, // teemo W ; xin Q 提莫 ：W
+        TARGET_UNIT = 1, // Taric E ; Annie Q ; teemo Q ; xin E 提莫Q
+        TARGET_LOC_AOE = 2, // Lux E, Ziggs R  定点AOE 吉格斯大招
+        TARGET_CONE = 3, // Annie W, Kass E    锥形  安妮 W
+        TARGET_SELF_AOE = 4, // sivir R, Gangplanck E  自身范围内：普朗克
+        TARGET_LOC = 6, // Ez Q, W, E, R ; Mundo Q  定点
         TARGET_LOC2 = 7  // Morg Q, Cait's Q -- These don't seem to have Missile inibins, and SpawnProjectile doesn't seem necessary to show the projectiles
     }
 
@@ -76,7 +82,7 @@ namespace LeagueSandbox.GameServer.Content
         //AISpeed
         public string AlternateName { get; set; } = "";
         public bool AlwaysSnapFacing { get; set; }
-        //AmmoCountHiddenInUI
+        //AmmoCountHiddenInUI  ：充能点数
         public float[] AmmoRechargeTime { get; set; } = { 0, 0, 0, 0, 0, 0, 0 };
         public int[] AmmoUsed { get; set; } = { 1, 1, 1, 1, 1, 1, 1 };
         //AnimationLeadOutName

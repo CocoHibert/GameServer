@@ -3,13 +3,13 @@
     public enum BuffType : byte
     {
         INTERNAL,
-        AURA,
+        AURA,               //光环
         COMBAT_ENCHANCER,
         COMBAT_DEHANCER,
         SPELL_SHIELD,
-        STUN,
-        INVISIBILITY,
-        SILENCE,
+        STUN,               //击晕
+        INVISIBILITY,       //隐形
+        SILENCE,            //沉默
         TAUNT,
         POLYMORPH,
         SLOW,

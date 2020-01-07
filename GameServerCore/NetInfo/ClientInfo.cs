@@ -3,9 +3,10 @@ using GameServerCore.Enums;
 
 namespace GameServerCore.NetInfo
 {
+    //客户端信息
     public class ClientInfo
     {
-        public ulong PlayerId { get; private set; }
+        public ulong PlayerId { get; private set; } 
         public uint ClientId { get; set; }
         public bool IsMatchingVersion { get; set; }
         public bool IsDisconnected { get; set; }

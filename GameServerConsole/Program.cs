@@ -21,6 +21,7 @@ namespace LeagueSandbox.GameServerConsole
             _logger = LoggerProvider.GetLogger();
 
             var parsedArgs = ArgsOptions.Parse(args);
+            
             parsedArgs.GameInfoJson = LoadConfig(
                 parsedArgs.GameInfoJsonPath,
                 parsedArgs.GameInfoJson,
@@ -44,6 +45,7 @@ namespace LeagueSandbox.GameServerConsole
                 {
                     leaguePath = Path.Combine(leaguePath, "League of Legends.exe");
                 }
+                _logger.Warn("-----------" + leaguePath);
                 if (File.Exists(leaguePath))
                 {
                     var startInfo = new ProcessStartInfo(leaguePath)
@@ -74,6 +76,7 @@ namespace LeagueSandbox.GameServerConsole
                 }
                 else
                 {
+                    _logger.Warn(leaguePath);
                     _logger.Warn("Unable to find League of Legends.exe. Check the GameServerSettings.json settings and your League location.");
                 }
             }

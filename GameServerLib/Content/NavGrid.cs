@@ -507,9 +507,9 @@ namespace LeagueSandbox.GameServer.Content
 
     public enum NavigationGridCellFlags : short
     {
-        HAS_GRASS = 0x1,
-        NOT_PASSABLE = 0x2,
-        BUSY = 0x4,
+        HAS_GRASS = 0x1,        //草丛
+        NOT_PASSABLE = 0x2,     //不可通行
+        BUSY = 0x4,             
         TARGETTED = 0x8,
         MARKED = 0x10,
         PATHED_ON = 0x20,

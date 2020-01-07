@@ -51,6 +51,7 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
         
         public void Update(float diff)
         {
+            //计时进行移除
             TimeElapsed += diff / 1000.0f;
             if (Math.Abs(Duration) > Extensions.COMPARE_EPSILON)
             {
@@ -66,6 +67,7 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
             Duration = 0;
         }
 
+        //BUFF叠加层数
         public bool IncrementStackCount()
         {
             if (StackCount == byte.MaxValue)

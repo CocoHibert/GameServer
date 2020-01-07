@@ -2,10 +2,10 @@
 {
     public enum TurretType
     {
-        OUTER_TURRET,
-        INNER_TURRET,
-        INHIBITOR_TURRET,
-        NEXUS_TURRET,
-        FOUNTAIN_TURRET
+        OUTER_TURRET,       //外塔
+        INNER_TURRET,       //内塔
+        INHIBITOR_TURRET,   //高地塔
+        NEXUS_TURRET,       //枢纽
+        FOUNTAIN_TURRET     //水泉
     }
 }

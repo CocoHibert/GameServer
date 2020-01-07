@@ -1,5 +1,6 @@
 ﻿namespace GameServerCore.Enums
 {
+    //佣兵出生位置
     public enum MinionSpawnPosition : uint
     {
         SPAWN_BLUE_TOP = 0xeb364c40,

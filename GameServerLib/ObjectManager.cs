@@ -33,6 +33,7 @@ namespace LeagueSandbox.GameServer
         public ObjectManager(Game game)
         {
             _game = game;
+            //初始化集合列表
             _objects = new Dictionary<uint, IGameObject>();
             _inhibitors = new Dictionary<uint, IInhibitor>();
             _champions = new Dictionary<uint, IChampion>();
@@ -51,14 +52,16 @@ namespace LeagueSandbox.GameServer
             var temp = GetObjects();
             foreach (var obj in temp.Values)
             {
+                //检测移除
                 if (obj.IsToRemove())
                 {
                     RemoveObject(obj);
                     continue;
                 }
-
+                //更新
                 obj.Update(diff);
 
+                //执行AtackableUnit行为
                 if (!(obj is IAttackableUnit))
                     continue;
 

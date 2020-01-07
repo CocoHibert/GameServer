@@ -5,6 +5,7 @@ using System;
 
 namespace LeagueSandbox.GameServer
 {
+    //GameServerApp启动入口
     /// <summary>
     /// This class is used by the GameServerApp to launch the server.
     /// Ideally the Program class in this project would be removed entirely, but that's not possible yet.
@@ -19,6 +20,7 @@ namespace LeagueSandbox.GameServer
         public string ConfigJson { get; private set; }
         public ushort ServerPort { get; private set; }
 
+        //服务器端口号、Json配置
         public GameServerLauncher(ushort serverPort, string configJson, string blowfishKey)
         {
             ConfigJson = configJson;

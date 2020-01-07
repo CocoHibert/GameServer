@@ -1,10 +1,10 @@
-﻿namespace GameServerCore.Domain.GameObjects
+namespace GameServerCore.Domain.GameObjects
 {
     public interface IStatsModifier
     {
-        IStatModifier HealthPoints { get; }
-        IStatModifier HealthRegeneration { get; }
-        IStatModifier AttackDamage { get; }
+        IStatModifier HealthPoints { get; }         
+        IStatModifier HealthRegeneration { get; }   
+        IStatModifier AttackDamage { get; }         
         IStatModifier AbilityPower { get; }
         IStatModifier CriticalChance { get; }
         IStatModifier CriticalDamage { get; }

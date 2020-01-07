@@ -73,6 +73,7 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
         /// </summary>
         public virtual bool Cast(float x, float y, float x2, float y2, IAttackableUnit u = null)
         {
+            //反射检测空游戏脚本
             if (HasEmptyScript)
             {
                 return false;
@@ -141,6 +142,7 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
             }
         }
 
+        //技能开始吟唱
         /// <summary>
         /// Called when the spell is started casting and we're supposed to do things such as projectile spawning, etc.
         /// </summary>
@@ -150,6 +152,7 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
             CurrentChannelDuration = SpellData.ChannelDuration[Level];
         }
 
+        //技能结束吟唱
         /// <summary>
         /// Called when the character finished channeling
         /// </summary>
@@ -161,11 +164,14 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
 
             if (Slot < 4)
             {
+                //设置CD显示
                 _game.PacketNotifier.NotifySetCooldown(Owner, Slot, CurrentCooldown, GetCooldown());
             }
 
             Owner.IsCastingSpell = false;
         }
+
+        //技能简单状态机
 
         /// <summary>
         /// Called every diff milliseconds to update the spell
@@ -174,8 +180,10 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
         {
             switch (State)
             {
+                //准备阶段
                 case SpellState.STATE_READY:
                     break;
+                //开始施法
                 case SpellState.STATE_CASTING:
                     Owner.IsCastingSpell = true;
                     CurrentCastTime -= diff / 1000.0f;
@@ -188,6 +196,7 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
                         }
                     }
                     break;
+                //技能冷却中
                 case SpellState.STATE_COOLDOWN:
                     CurrentCooldown -= diff / 1000.0f;
                     if (CurrentCooldown < 0)
@@ -195,6 +204,7 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
                         State = SpellState.STATE_READY;
                     }
                     break;
+                //技能吟唱  
                 case SpellState.STATE_CHANNELING:
                     CurrentChannelDuration -= diff / 1000.0f;
                     if (CurrentChannelDuration <= 0)
@@ -329,11 +339,13 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
             return "undefined";
         }
 
+        //获取技能冷却时间
         public float GetCooldown()
         {
             return _game.Config.CooldownsEnabled ? SpellData.Cooldown[Level] * (1 - Owner.Stats.CooldownReduction.Total) : 0;
         }
 
+        //技能升级
         public void LevelUp()
         {
             if (Level <= 5)
@@ -347,6 +359,7 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
             }
         }
 
+        //设置冷却时间
         public void SetCooldown(float newCd)
         {
             if (newCd <= 0)
@@ -363,6 +376,7 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
             }
         }
 
+        //减少冷却时间
         public void LowerCooldown(float lowerValue)
         {
             SetCooldown(CurrentCooldown - lowerValue);
