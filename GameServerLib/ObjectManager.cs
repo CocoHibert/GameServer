@@ -33,7 +33,6 @@ namespace LeagueSandbox.GameServer
         public ObjectManager(Game game)
         {
             _game = game;
-            //初始化集合列表
             _objects = new Dictionary<uint, IGameObject>();
             _inhibitors = new Dictionary<uint, IInhibitor>();
             _champions = new Dictionary<uint, IChampion>();
@@ -52,16 +51,49 @@ namespace LeagueSandbox.GameServer
             var temp = GetObjects();
             foreach (var obj in temp.Values)
             {
-                //检测移除
                 if (obj.IsToRemove())
                 {
                     RemoveObject(obj);
                     continue;
                 }
-                //更新
+
                 obj.Update(diff);
 
-                //执行AtackableUnit行为
+                //TODO: Implement visibility checks for projectiles here (should be similar to particles below), make
+                //Make sure to account for server only, globally visible (everyone sees it) projectiles, and normal projectiles:
+                //1. Nidalee Q is affected by visibility checks, but is server only 
+                //2. Ezreal R is globally visible, and is server only
+                //3. Every other projectile that is not server only, and is affected by visibility checks (normal projectiles)
+
+                var particle = obj as IParticle;
+                if (particle != null)
+                {
+                    foreach (var team in Teams)
+                    {
+                        var visionUnitsTeam = GetVisionUnits(particle.Team);
+                        if (visionUnitsTeam.ContainsKey(particle.NetId))
+                        {
+                            if (TeamHasVisionOn(team, particle))
+                            {
+                                particle.SetVisibleByTeam(team, true);
+                                _game.PacketNotifier.NotifyFXEnterTeamVisibility(particle, team);
+                                continue;
+                            }
+                        }
+
+                        if (!particle.IsVisibleByTeam(team) && TeamHasVisionOn(team, particle))
+                        {
+                            particle.SetVisibleByTeam(team, true);
+                            _game.PacketNotifier.NotifyFXEnterTeamVisibility(particle, team);
+                        }
+                        else if (particle.IsVisibleByTeam(team) && !TeamHasVisionOn(team, particle))
+                        {
+                            particle.SetVisibleByTeam(team, false);
+                            _game.PacketNotifier.NotifyFXLeaveTeamVisibility(particle, team);
+                        }
+                    }
+                }
+
                 if (!(obj is IAttackableUnit))
                     continue;
 
@@ -88,7 +120,7 @@ namespace LeagueSandbox.GameServer
                     if (!u.IsVisibleByTeam(team) && TeamHasVisionOn(team, u))
                     {
                         u.SetVisibleByTeam(team, true);
-                        _game.PacketNotifier.NotifyEnterVision(u, team);
+                        _game.PacketNotifier.NotifyEnterVisibilityClient(u, team);
                         // TODO: send this in one place only
                         _game.PacketNotifier.NotifyUpdatedStats(u, false);
                     }
@@ -104,18 +136,7 @@ namespace LeagueSandbox.GameServer
                 {
                     var tempBuffs = ai.GetBuffs();
                     foreach (var buff in tempBuffs.Values)
-                    {
-                        if (buff.Elapsed())
-                        {
-                            if (buff.Name != "")
-                            {
-                                _game.PacketNotifier.NotifyRemoveBuff(buff.TargetUnit, buff.Name, buff.Slot);
-                            }
-
-                            ai.RemoveBuff(buff);
-                            continue;
-                        }
-
+                    {                       
                         buff.Update(diff);
                     }
                 }

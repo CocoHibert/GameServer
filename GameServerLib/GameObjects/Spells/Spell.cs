@@ -11,6 +11,7 @@ using LeagueSandbox.GameServer.GameObjects.Missiles;
 using LeagueSandbox.GameServer.GameObjects.Other;
 using LeagueSandbox.GameServer.Packets;
 using LeagueSandbox.GameServer.Scripting.CSharp;
+using System.Collections.Generic;
 using System.Numerics;
 
 namespace LeagueSandbox.GameServer.GameObjects.Spells
@@ -30,7 +31,7 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
         public float CurrentCooldown { get; protected set; }
         public float CurrentCastTime { get; protected set; }
         public float CurrentChannelDuration { get; protected set; }
-        public uint FutureProjNetId { get; protected set; }
+        public Dictionary<uint, IProjectile> Projectiles { get; protected set; }
         public uint SpellNetId { get; protected set; }
 
         public IAttackableUnit Target { get; private set; }
@@ -42,6 +43,8 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
         private CSharpScriptEngine _scriptEngine;
         private Game _game;
         protected NetworkIdManager _networkIdManager;
+
+        private uint _futureProjNetId;
 
         private IGameScript _spellGameScript;
 
@@ -73,7 +76,6 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
         /// </summary>
         public virtual bool Cast(float x, float y, float x2, float y2, IAttackableUnit u = null)
         {
-            //反射检测空游戏脚本
             if (HasEmptyScript)
             {
                 return false;
@@ -96,7 +98,8 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
             X2 = x2;
             Y2 = y2;
             Target = u;
-            FutureProjNetId = _networkIdManager.GetNewNetId();
+            _futureProjNetId = _networkIdManager.GetNewNetId();
+            Projectiles = new Dictionary<uint, IProjectile>();
             SpellNetId = _networkIdManager.GetNewNetId();
 
             if (SpellData.TargettingType == 1 && Target != null && Target.GetDistanceTo(Owner) > SpellData.CastRange[Level])
@@ -117,7 +120,7 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
                 FinishCasting();
             }
 
-            _game.PacketNotifier.NotifyCastSpell(_game.Map.NavGrid, this, new Vector2(x, y) , new Vector2(x2, y2), FutureProjNetId, SpellNetId);
+            _game.PacketNotifier.NotifyCastSpell(_game.Map.NavGrid, this, new Vector2(x, y) , new Vector2(x2, y2), _futureProjNetId, SpellNetId);
             return true;
         }
 
@@ -142,7 +145,6 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
             }
         }
 
-        //技能开始吟唱
         /// <summary>
         /// Called when the spell is started casting and we're supposed to do things such as projectile spawning, etc.
         /// </summary>
@@ -152,7 +154,6 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
             CurrentChannelDuration = SpellData.ChannelDuration[Level];
         }
 
-        //技能结束吟唱
         /// <summary>
         /// Called when the character finished channeling
         /// </summary>
@@ -164,14 +165,11 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
 
             if (Slot < 4)
             {
-                //设置CD显示
                 _game.PacketNotifier.NotifySetCooldown(Owner, Slot, CurrentCooldown, GetCooldown());
             }
 
             Owner.IsCastingSpell = false;
         }
-
-        //技能简单状态机
 
         /// <summary>
         /// Called every diff milliseconds to update the spell
@@ -180,10 +178,8 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
         {
             switch (State)
             {
-                //准备阶段
                 case SpellState.STATE_READY:
                     break;
-                //开始施法
                 case SpellState.STATE_CASTING:
                     Owner.IsCastingSpell = true;
                     CurrentCastTime -= diff / 1000.0f;
@@ -196,7 +192,6 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
                         }
                     }
                     break;
-                //技能冷却中
                 case SpellState.STATE_COOLDOWN:
                     CurrentCooldown -= diff / 1000.0f;
                     if (CurrentCooldown < 0)
@@ -204,7 +199,6 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
                         State = SpellState.STATE_READY;
                     }
                     break;
-                //技能吟唱  
                 case SpellState.STATE_CHANNELING:
                     CurrentChannelDuration -= diff / 1000.0f;
                     if (CurrentChannelDuration <= 0)
@@ -226,50 +220,71 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
             }
 
             _spellGameScript.ApplyEffects(Owner, u, this, p);
+            if (p.IsToRemove())
+            {
+                Projectiles.Remove(p.NetId);
+            }
         }
 
         public void AddProjectile(string nameMissile, float fromX, float fromY, float toX, float toY, bool isServerOnly = false)
         {
+            ISpellData projectileSpellData = this._game.Config.ContentManager.GetSpellData(nameMissile);
+
             var p = new Projectile(
-                _game,
-                fromX,
-                fromY,
-                (int)SpellData.LineWidth,
-                Owner,
-                new Target(toX, toY),
-                this,
-                SpellData.MissileSpeed,
-                nameMissile,
-                SpellData.Flags,
-                FutureProjNetId
-            );
+                    _game,
+                    fromX,
+                    fromY,
+                    (int)projectileSpellData.LineWidth,
+                    Owner,
+                    new Target(toX, toY),
+                    this,
+                    projectileSpellData.MissileSpeed,
+                    nameMissile,
+                    projectileSpellData.Flags,
+                    _futureProjNetId,
+                    isServerOnly
+                );
+
+            Projectiles.Add(p.NetId, p);
+
             _game.ObjectManager.AddObject(p);
+
             if (!isServerOnly)
             {
-                _game.PacketNotifier.NotifyProjectileSpawn(p);
+                _game.PacketNotifier.NotifyMissileReplication(p);
             }
+
+            _futureProjNetId = _networkIdManager.GetNewNetId();
         }
 
         public void AddProjectileTarget(string nameMissile, ITarget target, bool isServerOnly = false)
         {
+            ISpellData projectileSpellData = this._game.Config.ContentManager.GetSpellData(nameMissile);
+
             var p = new Projectile(
                 _game,
                 Owner.X,
                 Owner.Y,
-                (int)SpellData.LineWidth,
+                (int)projectileSpellData.LineWidth,
                 Owner,
                 target,
                 this,
-                SpellData.MissileSpeed,
+                projectileSpellData.MissileSpeed,
                 nameMissile,
-                SpellData.Flags,
-                FutureProjNetId
+                projectileSpellData.Flags,
+                _futureProjNetId
             );
+
+            Projectiles.Add(p.NetId, p);
+
             _game.ObjectManager.AddObject(p);
+
             if (!isServerOnly)
             {
-                _game.PacketNotifier.NotifyProjectileSpawn(p);
+                _game.PacketNotifier.NotifyMissileReplication(p);
             }
+
+            _futureProjNetId = _networkIdManager.GetNewNetId();
         }
 
         public void AddLaser(string effectName, float toX, float toY, bool affectAsCastIsOver = true)
@@ -285,9 +300,11 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
                 effectName,
                 SpellData.Flags,
                 affectAsCastIsOver,
-                FutureProjNetId
+                _futureProjNetId
             );
+            Projectiles.Add(l.NetId, l);
             _game.ObjectManager.AddObject(l);
+            _futureProjNetId = _networkIdManager.GetNewNetId();
         }
 
         public void AddCone(string effectName, float toX, float toY, float angleDeg, bool affectAsCastIsOver = true)
@@ -304,9 +321,11 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
                 SpellData.Flags,
                 affectAsCastIsOver,
                 angleDeg,
-                FutureProjNetId
+                _futureProjNetId
             );
+            Projectiles.Add(c.NetId, c);
             _game.ObjectManager.AddObject(c);
+            _futureProjNetId = _networkIdManager.GetNewNetId();
         }
 
         public void SpellAnimation(string animName, IAttackableUnit target)
@@ -339,13 +358,11 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
             return "undefined";
         }
 
-        //获取技能冷却时间
         public float GetCooldown()
         {
             return _game.Config.CooldownsEnabled ? SpellData.Cooldown[Level] * (1 - Owner.Stats.CooldownReduction.Total) : 0;
         }
 
-        //技能升级
         public void LevelUp()
         {
             if (Level <= 5)
@@ -359,7 +376,19 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
             }
         }
 
-        //设置冷却时间
+        public void SetLevel(byte toLevel)
+        {
+            if (toLevel <= 5)
+            {
+                Level = toLevel;
+            }
+
+            if (Slot < 4)
+            {
+                Owner.Stats.ManaCost[Slot] = SpellData.ManaCost[Level];
+            }
+        }
+
         public void SetCooldown(float newCd)
         {
             if (newCd <= 0)
@@ -376,7 +405,6 @@ namespace LeagueSandbox.GameServer.GameObjects.Spells
             }
         }
 
-        //减少冷却时间
         public void LowerCooldown(float lowerValue)
         {
             SetCooldown(CurrentCooldown - lowerValue);

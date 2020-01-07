@@ -25,7 +25,6 @@ namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits
         public string Model { get; protected set; }
 
         protected readonly ILog Logger;
-        public IInventoryManager Inventory { get; protected set; }
         public int KillDeathCounter { get; set; }
         public int MinionCounter { get; protected set; }
         public IReplication Replication { get; protected set; }
@@ -45,7 +44,8 @@ namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits
             Logger = LoggerProvider.GetLogger();
             Stats = stats;
             Model = model;
-            CollisionRadius = 40;
+            if (collisionRadius != 0) CollisionRadius = collisionRadius;
+            else CollisionRadius = 40;
             Stats.AttackSpeedMultiplier.BaseValue = 1.0f;
         }
 

@@ -14,24 +14,24 @@ namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits.AI
         /// </summary>
         protected List<Vector2> _mainWaypoints;
         protected int _curMainWaypoint;
-        public MinionSpawnPosition SpawnPosition { get; }
+        public string BarracksName { get; } // barracks name of the position
         public MinionSpawnType MinionSpawnType { get; }
 
         public LaneMinion(
             Game game,
             MinionSpawnType spawnType,
-            MinionSpawnPosition position,
+            string position,
             List<Vector2> mainWaypoints,
             uint netId = 0
         ) : base(game, null, 0, 0, "", "", 1100, netId)
         {
             MinionSpawnType = spawnType;
-            SpawnPosition = position;
+            BarracksName = position;
             _mainWaypoints = mainWaypoints;
             _curMainWaypoint = 0;
             _aiPaused = false;
 
-            var spawnSpecifics = _game.Map.MapProperties.GetMinionSpawnPosition(SpawnPosition);
+            var spawnSpecifics = _game.Map.MapProperties.GetMinionSpawnPosition(BarracksName);
             SetTeam(spawnSpecifics.Item1);
             SetPosition(spawnSpecifics.Item2.X, spawnSpecifics.Item2.Y);
 
@@ -62,7 +62,7 @@ namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits.AI
         public LaneMinion(
             Game game,
             MinionSpawnType spawnType,
-            MinionSpawnPosition position,
+            string position,
             uint netId = 0
         ) : this(game, spawnType, position, new List<Vector2>(), netId)
         {
@@ -135,7 +135,7 @@ namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits.AI
                 return true;
             }
 
-            _game.PacketNotifier.NotifyStopAutoAttack(this);
+            _game.PacketNotifier.NotifyInstantStopAttack(this, false);
             IsAttacking = false;
 
             return false;
@@ -168,7 +168,7 @@ namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits.AI
             if (IsAttacking && (TargetUnit == null || TargetUnit.IsDead || GetDistanceTo(TargetUnit) > Stats.Range.Total))
             // If target is dead or out of range
             {
-                _game.PacketNotifier.NotifyStopAutoAttack(this);
+                _game.PacketNotifier.NotifyInstantStopAttack(this, false);
                 IsAttacking = false;
             }
         }
