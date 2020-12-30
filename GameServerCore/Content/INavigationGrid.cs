@@ -4,21 +4,15 @@ using GameServerCore.Domain.GameObjects;
 
 namespace GameServerCore.Content
 {
-    public interface INavGrid
+    public interface INavigationGrid
     {
-        byte MajorVersion { get; }
-        short MinorVersion { get; }
-        Vector3 MinGridPos { get; }
-        Vector3 MaxGridPos { get; }
-        Vector3 TranslationMaxGridPos { get; }
+        Vector3 MinGridPosition { get; }
+        Vector3 MaxGridPosition { get; }
+        Vector3 TranslationMaxGridPosition { get; }
         float CellSize { get; }
-        uint XCellCount { get; }
-        uint YCellCount { get; }
-        ushort[] CellFlags { get; } // Version 7 change
-        int XSampledHeightCount { get; }
-        int YSampledHeightCount { get; }
-        float DirectionX { get; }
-        float DirectionY { get; }
+        uint CellCountX { get; }
+        uint CellCountY { get; }
+        Vector2 SampledHeightsDistance { get; }
         float OffsetX { get; }
         float OffsetZ { get; }
         float MapWidth { get; }
@@ -32,7 +26,6 @@ namespace GameServerCore.Content
         List<Vector2> GetPath(Vector2 start, Vector2 end);
         bool IsSeeThrough(Vector2 coords);
         bool IsSeeThrough(float x, float y);
-        Vector2 GetSize();
         bool IsAnythingBetween(IGameObject a, IGameObject b);
         Vector2 GetClosestTerrainExit(Vector2 location);
     }

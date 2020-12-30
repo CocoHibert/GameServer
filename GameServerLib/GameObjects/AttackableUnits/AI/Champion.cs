@@ -12,6 +12,7 @@ using LeagueSandbox.GameServer.Content;
 using LeagueSandbox.GameServer.GameObjects.Spells;
 using LeagueSandbox.GameServer.GameObjects.Stats;
 using LeagueSandbox.GameServer.Items;
+using LeagueSandbox.GameServer.Content.Navigation;
 
 namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits.AI
 {
@@ -114,7 +115,7 @@ namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits.AI
         {
             base.OnAdded();
             _game.ObjectManager.AddChampion(this);
-            _game.PacketNotifier.NotifyChampionSpawned(this, Team);
+            _game.PacketNotifier.NotifySpawn(this, Team);
         }
 
         public override void OnRemoved()
@@ -159,7 +160,7 @@ namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits.AI
         {
             return !HasCrowdControl(CrowdControlType.STUN) &&
                 !IsDashing &&
-                !IsCastingSpell &&
+                (GetBuffs().Count(x => x.OriginSpell.SpellData.CanMoveWhileChanneling) == GetBuffsCount() || !IsCastingSpell) &&
                 !IsDead &&
                 !HasCrowdControl(CrowdControlType.ROOT);
         }
@@ -223,12 +224,18 @@ namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits.AI
             return new Vector2(coords.X, coords.Y);
         }
 
+        // TODO: fix StopMovement function in ObjAiBase and delete this
         public void StopChampionMovement()
         {
-            List<Vector2> l = new List<Vector2>();
-            l.Add(new Vector2(this.X, this.Y));
-            this.SetWaypoints(l);
+            StopMovement();
             _game.PacketNotifier.NotifyMovement(this);
+        }
+        
+        public void TeleportTo(float x, float y)
+        {
+            // @TODO: Maybe add a OnChampionTeleport event?
+            ApiEventManager.OnChampionMove.Publish(this);
+            base.TeleportTo(x, y);
         }
 
         public ISpell GetSpellBySlot(byte slot)
@@ -361,44 +368,18 @@ namespace LeagueSandbox.GameServer.GameObjects.AttackableUnits.AI
             RespawnTimer = -1;
         }
 
+        public bool OnDisconnect()
+        {
+            this.StopChampionMovement();
+            this.SetWaypoints(_game.Map.NavigationGrid.GetPath(GetPosition(), _game.Map.MapProperties.GetRespawnLocation(Team).GetPosition()));
+
+            return true;
+        }
+
         public void Recall()
         {
             var spawnPos = GetRespawnPosition();
             TeleportTo(spawnPos.X, spawnPos.Y);
-        }
-
-        public int GetChampionHash()
-        {
-            var szSkin = "";
-
-            if (Skin < 10)
-            {
-                szSkin = "0" + Skin;
-            }
-            else
-            {
-                szSkin = Skin.ToString();
-            }
-
-            var hash = 0;
-            var gobj = "[Character]";
-
-            for (var i = 0; i < gobj.Length; i++)
-            {
-                hash = char.ToLower(gobj[i]) + 0x1003F * hash;
-            }
-
-            for (var i = 0; i < Model.Length; i++)
-            {
-                hash = char.ToLower(Model[i]) + 0x1003F * hash;
-            }
-
-            for (var i = 0; i < szSkin.Length; i++)
-            {
-                hash = char.ToLower(szSkin[i]) + 0x1003F * hash;
-            }
-
-            return hash;
         }
 
         public bool LevelUp()

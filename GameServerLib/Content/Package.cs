@@ -9,6 +9,7 @@ using log4net.Repository.Hierarchy;
 using LeagueSandbox.GameServer.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using LeagueSandbox.GameServer.Content.Navigation;
 
 namespace LeagueSandbox.GameServer.Content
 {
@@ -128,17 +129,17 @@ namespace LeagueSandbox.GameServer.Content
             return toReturnMapSpawns;
         }
 
-        public INavGrid GetNavGrid(int mapId)
+        public INavigationGrid GetNavigationGrid(int mapId)
         {
-            var navgridPath = $"{PackagePath}/AIMesh/Map{mapId}/AIPath.aimesh_ngrid";
+            string navigationGridPath = $"{this.PackagePath}/AIMesh/Map{mapId}/AIPath.aimesh_ngrid";
 
-            if (!File.Exists(navgridPath))
+            if (!File.Exists(navigationGridPath))
             {
-                _logger.Debug($"{PackageName} does not contain a navgrid, skipping...");
+                this._logger.Debug($"{this.PackageName} does not contain a navgrid, skipping...");
                 return null;
             }
 
-            return NavGridReader.ReadBinary(navgridPath);
+            return new NavigationGrid(navigationGridPath);
         }
 
         public ISpellData GetSpellData(string spellName)
@@ -168,15 +169,33 @@ namespace LeagueSandbox.GameServer.Content
         public bool LoadScripts()
         {
             var scriptLoadResult = _game.ScriptEngine.LoadSubdirectoryScripts(PackagePath);
-
-            if (scriptLoadResult)
+            switch (scriptLoadResult)
             {
-                _logger.Debug($"Loaded C# scripts from package: {PackageName}");
-                return true;
+                case Scripting.CSharp.CompilationStatus.Compiled:
+                    {
+                        _logger.Debug($"Loaded all C# scripts from package: {PackageName}");
+                        return true;
+                    }
+                case Scripting.CSharp.CompilationStatus.SomeCompiled:
+                    {
+                        _logger.Debug($"Loaded some C# scripts from package: {PackageName}");
+                        return true;
+                    }
+                case Scripting.CSharp.CompilationStatus.NoneCompiled:
+                    {
+                        _logger.Debug($"{PackageName} failed to compile all C# scripts...");
+                        return false;
+                    }
+                case Scripting.CSharp.CompilationStatus.NoScripts:
+                    {
+                        _logger.Debug($"{PackageName} does not have C# scripts, skipping...");
+                        return false;
+                    }
+                default:
+                    {
+                        return false;
+                    }
             }
-
-            _logger.Debug($"{PackageName} does not contain C# scripts, skipping...");
-            return false;
         }
 
         private void LoadPackage()

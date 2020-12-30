@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using CommandLine;
 using GameServerConsole.Properties;
@@ -12,30 +13,35 @@ using log4net;
 
 namespace LeagueSandbox.GameServerConsole
 {
+    /// <summary>
+    /// Class representing the program piece, or commandline piece of the server; where everything starts (GameServerConsole -> GameServer, etc).
+    /// </summary>
     internal class Program
     {
+        // So we can print debug info via the command line interface.
         private static ILog _logger = LoggerProvider.GetLogger();
 
         private static void Main(string[] args)
         {
-
+            // If the command line interface was ran with additional parameters (perhaps via a shortcut or just via another command line)
+            // Refer to ArgsOptions for all possible launch parameters
             var parsedArgs = ArgsOptions.Parse(args);
             parsedArgs.GameInfoJson = LoadConfig(
                 parsedArgs.GameInfoJsonPath,
                 parsedArgs.GameInfoJson,
                 Encoding.UTF8.GetString(Resources.GameInfo));
 
-            var gameServerBlowFish = "17BLOhi6KZsTtldTsizvHg==";
             var gameServerLauncher = new GameServerLauncher(
                 parsedArgs.ServerPort,
-                parsedArgs.GameInfoJson,
-                gameServerBlowFish);
+                parsedArgs.GameInfoJson);
 
 #if DEBUG
+            // When debugging, optionally the game client can be launched automatically given the path (placed in GameServerSettings.json) to the folder containing the League executable.
             var configGameServerSettings = GameServerConfig.LoadFromJson(LoadConfig(
                 parsedArgs.GameServerSettingsJsonPath,
                 parsedArgs.GameServerSettingsJson,
                 Encoding.UTF8.GetString(Resources.GameServerSettings)));
+
             if (configGameServerSettings.AutoStartClient)
             {
                 var leaguePath = configGameServerSettings.ClientLocation;
@@ -45,10 +51,11 @@ namespace LeagueSandbox.GameServerConsole
                 }
                 if (File.Exists(leaguePath))
                 {
+                    // TODO: launch a client for each player in config
                     var startInfo = new ProcessStartInfo(leaguePath)
                     {
                         Arguments = String.Format("\"8394\" \"LoLLauncher.exe\" \"\" \"127.0.0.1 {0} {1} 1\"",
-                            parsedArgs.ServerPort, gameServerBlowFish),
+                            parsedArgs.ServerPort, gameServerLauncher.game.Config.Players.First().Value.BlowfishKey),
                         WorkingDirectory = Path.GetDirectoryName(leaguePath)
                     };
 
@@ -81,9 +88,17 @@ namespace LeagueSandbox.GameServerConsole
                 _logger.Info("Server is ready, clients can now connect.");
             }
 #endif
+            // This is where the actual GameServer starts.
             gameServerLauncher.StartNetworkLoop();
         }
 
+        /// <summary>
+        /// Used to parse any of the configuration files used for the GameServer, ex: GameInfo.json or GameServerSettings.json. 
+        /// </summary>
+        /// <param name="filePath">Full path to the configuration file.</param>
+        /// <param name="currentJsonString">String representing the content of the configuration file. Usually empty.</param>
+        /// <param name="defaultJsonString">String representing the default content of the configuration file. Usually what is already defined in the respective configuration file.</param>
+        /// <returns>The string defined in the configuration file or defined via launch arguments.</returns>
         private static string LoadConfig(string filePath, string currentJsonString, string defaultJsonString)
         {
             if (!string.IsNullOrEmpty(currentJsonString))
@@ -111,6 +126,9 @@ namespace LeagueSandbox.GameServerConsole
         }
     }
 
+    /// <summary>
+    /// Class housing launch arguments and their parsing used for the GameServerConsole.
+    /// </summary>
     public class ArgsOptions
     {
         [Option("config", Default = "Settings/GameInfo.json")]

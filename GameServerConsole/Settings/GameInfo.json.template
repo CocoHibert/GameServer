@@ -1,6 +1,8 @@
 {
     "players": [
         {
+            "playerId": 1,
+            "blowfishKey": "17BLOhi6KZsTtldTsizvHg==",
             "rank": "DIAMOND",
             "name": "Test",
             "champion": "Ezreal",
@@ -54,7 +56,7 @@
         "COOLDOWNS_ENABLED": false,
         "CHEATS_ENABLED": true,
         "MINION_SPAWNS_ENABLED": false,
-        "CONTENT_PATH": "../../../../Content",
+        "CONTENT_PATH": "../../../../../Content",
         "IS_DAMAGE_TEXT_GLOBAL": false
     }
 }
